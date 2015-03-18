@@ -19,7 +19,24 @@ new g_iRCONData[MAX_RCONS][g_rcon_data];
 
 forward OnRemoteRCONFail(ipaddr[], port, password[], command[], reason);
 forward OnRemoteRCONExecuted(ipaddr[], port, password[], command[]);
-	
+
+public OnFilterScriptInit()
+{
+     if(!GetServerVarAsInt("rcon"))
+     {
+          printf("[WARNING]: RCON is disabled in server.cfg! Enable it.");
+     }
+     
+     #if defined _ALS_OnFilterScriptInit
+     #undef OnFilterScriptInit
+     #else
+     #define _ALS_OnFilterScriptInit
+     #endif
+
+     #define OnFilterScriptInit A_OnFilterScriptInit
+
+forward A_OnFilterScriptInit();
+          
 public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const command[])
 {
 	new modifyableIP[MAX_IP_LEN], modifyablePassword[32], modifyableCommand[80], reason;
