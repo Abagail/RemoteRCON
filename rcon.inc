@@ -17,7 +17,7 @@ new g_iRCON = 1;
 new g_iWhitelisting = 1;
 new g_iRCONData[MAX_RCONS][g_rcon_data];
 
-forward OnRemoteRCONFail(ipaddr[], port, password[], command[]);
+forward OnRemoteRCONFail(ipaddr[], port, password[], command[], reason);
 forward OnRemoteRCONExecuted(ipaddr[], port, password[], command[]);
 	
 public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const command[])
