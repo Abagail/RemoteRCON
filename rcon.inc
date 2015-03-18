@@ -74,6 +74,8 @@ public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const
 								return 0;
 							}
 						}
+						
+						return 1;
 					//}
 				}
 				else 
@@ -95,6 +97,8 @@ public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const
 	
 	else
 	{
+		reason = 3;
+		CallLocalFunction("OnRemoteRCONFail", ipaddr, port, password, command, reason);
 		return 0; // Remote RCON isn't enabled.
 	}
 	
