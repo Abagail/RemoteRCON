@@ -22,7 +22,7 @@ forward OnRemoteRCONExecuted(ipaddr[], port, password[], command[]);
 	
 public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const command[])
 {
-	new modifyableIP[MAX_IP_LEN], modifyablePassword[32], modifyableCommand[80];
+	new modifyableIP[MAX_IP_LEN], modifyablePassword[32], modifyableCommand[80], reason;
 	format(modifyableIP, sizeof(modifyableIP), "%s", ipaddr); // we have to do this since YSF makes the ipaddr var a constant
 	format(modifyablePassword, sizeof(modifyablePassword), "%s", password);
 	format(modifyableCommand, sizeof(modifyableCommand), "%s", command);
@@ -76,12 +76,19 @@ public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const
 						}
 					//}
 				}
+				else 
+				{
+					reason = 1;
+					CallLocalFunction("OnRemoteRCONFail", ipaddr, port, password, command, reason);
+					return 0; // drop the packet
+				}
 			}
 		}
 		
 		else
 		{
-		    CallLocalFunction("OnRemoteRCONFail", ipaddr, port, password, command);
+			reason = 2;
+		    CallLocalFunction("OnRemoteRCONFail", ipaddr, port, password, command, reason);
 			return 0; // drop the packet
 		}
 	}
