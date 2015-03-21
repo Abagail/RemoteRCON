@@ -27,6 +27,9 @@ public OnFilterScriptInit()
           printf("[WARNING]: RCON is disabled in server.cfg! Enable it.");
      }
      
+     CallLocalFunction("A_OnFilterScriptInit", "", "");
+     return 1;
+}
      #if defined _ALS_OnFilterScriptInit
      #undef OnFilterScriptInit
      #else
