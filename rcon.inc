@@ -63,8 +63,8 @@ public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const
 		{
 			if(!success)
 			{
-			    printf("IP: %s:%d(using password: %d) failed remote-RCON login.");
-			    printf("[RAW DETAILS]: %s,%d,%s,%d,%s");
+			    printf("IP: %s:%d(using password: %s) failed remote-RCON login.", ipaddr, port, password);
+			    printf("[RAW DETAILS]: %s,%d,%s,%d,%s", ipaddr, port, password, success, command);
 			}
 		}
 
@@ -97,14 +97,14 @@ public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const
 					    if(g_iLogging) printf("Command executed by %s:%d(password: %s) - Command: %s.", ipaddr, port, password, command);
 						CallLocalFunction("OnRemoteRCONExecuted", ipaddr, port, password, command);
 
-						/*if(funcidx("OnRemoteRCONExecuted") > -1)
+						if(funcidx("OnRemoteRCONExecuted") > -1)
 						{
 							if(OnRemoteRCONExecuted(modifyableIP, port, modifyablePassword, modifyableCommand) == 0)
 							{
 								if(g_iLogging) printf("Command dropped in OnRemoteRCONExecuted.");
 								return 0;
 							}
-						}*/
+						}
 
 
 						return 1;
