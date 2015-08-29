@@ -13,6 +13,10 @@
 	#define INVALID_RCON_ID -1
 #endif
 
+#if !defined INVALID_RCON_SLOT
+	#define INVALID_RCON_SLOT -1
+#endif
+
 #if !defined MAX_IP_LEN
 	#define MAX_IP_LEN 32
 #endif
@@ -24,10 +28,16 @@ enum g_rcon_data
 	g_iUsed
 }
 
-new static g_iLogging;
-new static g_iRCON = 1;
-new static g_iWhitelisting = 1;
-new static g_iRCONData[MAX_RCONS][g_rcon_data];
+enum e_REMOTE_RCON_BOOLS:(<<= 1)
+{
+	e_BOOL_iRCON = 1,
+	e_BOOL_iLogging,
+	e_BOOL_iWhitelisting
+}
+
+new static 	g_iRCONData[MAX_RCONS][g_rcon_data],
+			e_REMOTE_RCON_BOOLS:g_iRCONBools;
+
 
 forward OnRemoteRCONFail(ipaddr[], port, password[], command[], reason);
 forward OnRemoteRCONExecuted(ipaddr[], port, password[], command[]);
@@ -73,14 +83,14 @@ public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const
 	/*format(modifyableIP, sizeof(modifyableIP), "%s", ipaddr); // we have to do this since YSF makes the ipaddr var a constant
 	format(modifyablePassword, sizeof(modifyablePassword), "%s", password);
 	format(modifyableCommand, sizeof(modifyableCommand), "%s", command); -- Old method used for transferring the data */
-	
+
 	strcpy(modifyableIP, ipaddr, sizeof modifyableIP);
 	strcpy(modifyablePassword, password, sizeof modifyablePassword);
 	strcpy(modifyableCommand, command, sizeof modifyableCommand);
-	
-	if(g_iRCON)
+
+	if(g_iRCONBools & e_BOOL_iRCON)
 	{
-		if(g_iLogging)
+		if(g_iRCONBools & e_BOOL_iLogging)
 		{
 			if(!success)
 			{
@@ -92,7 +102,7 @@ public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const
 
 	    if(success)
 	    {
-	        if(g_iWhitelisting)
+	        if(g_iRCONBools & e_BOOL_iWhitelisting)
 			{
 				if(IsIPWhitelisted(modifyableIP))
 				{
@@ -115,14 +125,14 @@ public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const
 					//if(g_iCommandData[command][permission] == 0) // Aren't denied the permission
 					//{
 
-					    if(g_iLogging) printf("Command executed by %s:%d(password: %s) - Command: %s.", ipaddr, port, password, command);
+					    if(g_iRCONBools & e_BOOL_iLogging) printf("Command executed by %s:%d(password: %s) - Command: %s.", ipaddr, port, password, command);
 						CallLocalFunction("OnRemoteRCONExecuted", ipaddr, port, password, command);
 
 						if(funcidx("OnRemoteRCONExecuted") > -1)
 						{
 							if(OnRemoteRCONExecuted(modifyableIP, port, modifyablePassword, modifyableCommand) == 0)
 							{
-								if(g_iLogging) printf("Command dropped in OnRemoteRCONExecuted.");
+								if(g_iRCONBools & e_BOOL_iLogging) printf("Command dropped in OnRemoteRCONExecuted.");
 								return 0;
 							}
 						}
@@ -162,11 +172,11 @@ stock bool: ToggleLogging(bool: toggle)
 {
 	if(toggle == true)
 	{
-		g_iLogging = true;
+        g_iRCONBools |= e_BOOL_iLogging;
 	}
 	else
 	{
-		g_iLogging = false;
+		g_iRCONBools &= ~e_BOOL_iLogging;
 	}
 
 	return toggle;
@@ -176,12 +186,12 @@ stock bool: ToggleRemoteRCON(bool: toggle)
 {
 	if(toggle == true)
 	{
-	    g_iRCON = 1;
+	    g_iRCONBools |= e_BOOL_iRCON;
 	}
 
 	else
 	{
-	    g_iRCON = 0;
+	    g_iRCONBools &= ~e_BOOL_iRCON;
 	}
 
 	return toggle;
@@ -191,12 +201,12 @@ stock bool: ToggleRemoteWhitelist(bool: toggle)
 {
 	if(toggle == true)
 	{
-	    g_iWhitelisting = 1;
+	    g_iRCONBools |= e_BOOL_iWhitelisting;
 	}
 
 	else
 	{
-	    g_iWhitelisting = 0;
+	    g_iRCONBools &= ~e_BOOL_iWhitelisting;
 	}
 
 	return toggle;
@@ -204,7 +214,7 @@ stock bool: ToggleRemoteWhitelist(bool: toggle)
 
 stock bool: RCON_IsWhitelistingEnabled()
 {
-	if(g_iWhitelisting)
+	if(g_iRCONBools & e_BOOL_iWhitelisting)
 	    return true;
 
 	return false;
@@ -212,7 +222,7 @@ stock bool: RCON_IsWhitelistingEnabled()
 
 stock bool: RCON_IsRemoteRCONEnabled()
 {
-	if(g_iRCON)
+	if(g_iRCONBools & e_BOOL_iRCON)
 	    return true;
 
 	return false;
@@ -220,7 +230,7 @@ stock bool: RCON_IsRemoteRCONEnabled()
 
 stock bool: RCON_IsLoggingEnabled()
 {
-	if(g_iLogging)
+	if(g_iRCONBools & e_BOOL_iLogging)
 	    return true;
 
 	return false;
@@ -260,7 +270,8 @@ stock WhitelistIP(ipaddr[])
 
 		if(slot || slot == 0) // Will be -1 if none are avaliable
 		{
-			format(g_iRCONData[slot][g_iIP], MAX_IP_LEN, "%s", ipaddr);
+//			format(g_iRCONData[slot][g_iIP], MAX_IP_LEN, "%s", ipaddr);
+			strcpy(g_iRCONData[slot][g_iP], ipaddr, MAX_IP_LEN);
 			g_iRCONData[slot][g_iUsed] = 1;
 
 			return 1;
@@ -272,12 +283,12 @@ stock WhitelistIP(ipaddr[])
 
 stock UnwhitelistIPAddress(ipaddr[])
 {
-	if(IsIPWhitelisted(ipaddr)
+	if(IsIPWhitelisted(ipaddr))
 	{
 	    new slot = GetIPSlot(ipaddr);
 
-		g_iRCONData[i][g_iIP] = EOS;
-		g_iRCONData[i][g_iUsed] = 0;
+		g_iRCONData[slot][g_iIP] = EOS;
+		g_iRCONData[slot][g_iUsed] = 0;
 		return 1;
 	}
 
@@ -308,3 +319,4 @@ stock GetIPSlot(ipaddr[])
 
 	return INVALID_RCON_SLOT;
 }
+
