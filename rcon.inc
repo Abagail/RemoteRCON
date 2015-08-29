@@ -270,7 +270,8 @@ stock WhitelistIP(ipaddr[])
 
 		if(slot || slot == 0) // Will be -1 if none are avaliable
 		{
-			format(g_iRCONData[slot][g_iIP], MAX_IP_LEN, "%s", ipaddr);
+//			format(g_iRCONData[slot][g_iIP], MAX_IP_LEN, "%s", ipaddr);
+			strcpy(g_iRCONData[slot][g_iP], ipaddr, MAX_IP_LEN);
 			g_iRCONData[slot][g_iUsed] = 1;
 
 			return 1;
