@@ -51,12 +51,33 @@ public OnFilterScriptInit()
 
 #define OnFilterScriptInit A_OnFilterScriptInit
 
+#if !defined strcpy
+	#if defined INCLUDE_STRCPY_FALSE
+	static strcpy(dest[], const src[], size = sizeof(dest))
+	{
+	    dest[0] = EOS;
+	    return strcat(dest, src, size);
+	}
+	#else
+	strcpy(dest[], const src[], size = sizeof(dest))
+	{
+    	dest[0] = EOS;
+    	return strcat(dest, src, size);
+	}
+	#endif
+#endif
+
 public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const command[])
 {
 	new modifyableIP[MAX_IP_LEN], modifyablePassword[32], modifyableCommand[80], reason;
-	format(modifyableIP, sizeof(modifyableIP), "%s", ipaddr); // we have to do this since YSF makes the ipaddr var a constant
+	/*format(modifyableIP, sizeof(modifyableIP), "%s", ipaddr); // we have to do this since YSF makes the ipaddr var a constant
 	format(modifyablePassword, sizeof(modifyablePassword), "%s", password);
-	format(modifyableCommand, sizeof(modifyableCommand), "%s", command);
+	format(modifyableCommand, sizeof(modifyableCommand), "%s", command); -- Old method used for transferring the data */
+	
+	strcpy(modifyableIP, ipaddr, sizeof modifyableIP);
+	strcpy(modifyablePassword, password, sizeof modifyablePassword);
+	strcpy(modifyableCommand, command, sizeof modifyableCommand);
+	
 	if(g_iRCON)
 	{
 		if(g_iLogging)
@@ -179,6 +200,30 @@ stock bool: ToggleRemoteWhitelist(bool: toggle)
 	}
 
 	return toggle;
+}
+
+stock bool: RCON_IsWhitelistingEnabled()
+{
+	if(g_iWhitelisting)
+	    return true;
+
+	return false;
+}
+
+stock bool: RCON_IsRemoteRCONEnabled()
+{
+	if(g_iRCON)
+	    return true;
+
+	return false;
+}
+
+stock bool: RCON_IsLoggingEnabled()
+{
+	if(g_iLogging)
+	    return true;
+
+	return false;
 }
 
 stock GetFreeRCONSlot()
