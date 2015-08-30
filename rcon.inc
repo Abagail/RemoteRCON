@@ -38,13 +38,13 @@ enum e_REMOTE_RCON_BOOLS:(<<= 1) {
 new static
 		g_iRCONData[MAX_RCONS][e_RCON_DATA],
 		e_REMOTE_RCON_BOOLS:g_iRCONBools;
-		
+
 
 static Ab_RCONInit() {
 
 	if(!GetConsoleVarAsInt("rcon"))
 	    print("[WARNING] : RCON is disabled in server.cfg! Enable it.");
-	    
+
 	for(new i = 0; i< MAX_RCONS; i++)
 	    g_iRCONData[i][e_iIP][0] = '\0';
 
@@ -56,7 +56,7 @@ static Ab_RCONInit() {
 public OnFilterScriptInit() {
 
 	if(!(g_iRCONBools & e_BOOL_iInit)) {
-	
+
 	    g_iRCONBools |= e_BOOL_iInit;
 	    Ab_RCONInit();
 	}
@@ -70,7 +70,7 @@ public OnFilterScriptInit() {
 public OnGameModeInit() {
 
 	if(!(g_iRCONBools & e_BOOL_iInit)) {
-	
+
 	    g_iRCONBools |= e_BOOL_iInit;
 		Ab_RCONInit();
 	}
@@ -78,6 +78,59 @@ public OnGameModeInit() {
 	    return Ab_RCON_OnGameModeInit();
 	#else
 	    return 1;
+	#endif
+}
+
+public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const command[]) {
+
+	if(g_iRCONBools & e_BOOL_iRCON) {
+
+	    if(g_iRCONBools & e_BOOL_iLogging) {
+
+		    if(!success) {
+
+		        printf("IP : %s:%d(using password : %s) failed remote RCON login!", ipaddr, port, password);
+		        printf("[RAW DETAILS]: %s,%d,%s,%d,%s", ipaddr, port, password, success, command);
+				CallLocalFunction("OnRemoteRCONFail", "sissi", ipaddr, port, password, command, 2);
+			}
+		}
+		if(success) {
+
+		    if(g_iRCONBools & e_BOOL_iWhitelisting) {
+
+		        if(IsIPWhitelisted(ipaddr)) {
+
+		            if(g_iRCONBools & e_BOOL_iLogging)
+		                printf("RCON Command executed by %s:%d(password : %s) - Command : %s", ipaddr, port, password, command);
+
+					CallLocalFunction("OnRemoteRCONExecuted", "siss", ipaddr, port, password, command);
+
+	    			if(!OnRemoteRCONExecuted(ipaddr, port, password, command)) {
+
+	    			    if(g_iRCONBools & e_BOOL_iLogging)
+	    			        printf("Command : \"%s\" dropped in OnRemoteRCONExecuted.", command);
+
+						return 0;
+					}
+					return 1;
+				}
+				else {
+
+				    CallLocalFunction("OnRemoteRCONFail", "sissi", ipaddr, port, password, command, 1);
+				    return 0;
+				}
+			}
+		}
+	}
+	else {
+
+	    CallLocalFunction("OnRemoteRCONFail", "sissi", ipaddr, port, password, command, 3);
+		return 0;
+	}
+	#if defined Ab_RCON_OnRemoteRCONPacket
+	    return Ab_RCON_OnRemoteRCONPacket(ipaddr, port, password, success, command);
+	#else
+		return 1;
 	#endif
 }
 
@@ -93,8 +146,17 @@ public OnGameModeInit() {
 	#define _ALS_OnGameModeInit
 #endif
 
+#if defined _ALS_OnRemoteRCONPacket
+	#undef OnRemoteRCONPacket
+#else
+	#define _ALS_OnRemoteRCONPacket
+#endif
+
+
 #define OnFilterScriptInit 	Ab_RCON_OnFilterScriptInit
 #define OnGameModeInit      Ab_RCON_OnGameModeInit
+#define OnRemoteRCONPacket 	Ab_RCON_OnRemoteRCONPacket
+
 
 #if defined Ab_RCON_OnFilterScriptInit
 	forward Ab_RCON_OnFilterScriptInit();
@@ -104,55 +166,11 @@ public OnGameModeInit() {
 	forward Ab_RCON_OnGameModeInit();
 #endif
 
+#if defined Ab_RCON_OnRemoteRCONPacket
+	forward Ab_RCON_OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const command[]);
+#endif
 
-public OnRemoteRCONPacket(const ipaddr[], port, const password[], success, const command[]) {
 
-	if(g_iRCONBools & e_BOOL_iRCON) {
-	
-	    if(g_iRCONBools & e_BOOL_iLogging) {
-	    
-		    if(!success) {
-
-		        printf("IP : %s:%d(using password : %s) failed remote RCON login!", ipaddr, port, password);
-		        printf("[RAW DETAILS]: %s,%d,%s,%d,%s", ipaddr, port, password, success, command);
-				CallLocalFunction("OnRemoteRCONFail", "sissi", ipaddr, port, password, command, 2);
-			}
-		}
-		if(success) {
-		
-		    if(g_iRCONBools & e_BOOL_iWhitelisting) {
-		    
-		        if(IsIPWhitelisted(ipaddr)) {
-		        
-		            if(g_iRCONBools & e_BOOL_iLogging)
-		                printf("RCON Command executed by %s:%d(password : %s) - Command : %s", ipaddr, port, password, command);
-
-					CallLocalFunction("OnRemoteRCONExecuted", "siss", ipaddr, port, password, command);
-					
-	    			if(!OnRemoteRCONExecuted(ipaddr, port, password, command)) {
-	    			
-	    			    if(g_iRCONBools & e_BOOL_iLogging)
-	    			        printf("Command : \"%s\" dropped in OnRemoteRCONExecuted.", command);
-	    			        
-						return 0;
-					}
-					return 1;
-				}
-				else {
-				
-				    CallLocalFunction("OnRemoteRCONFail", "sissi", ipaddr, port, password, command, 1);
-				    return 0;
-				}
-			}
-		}
-	}
-	else {
-	
-	    CallLocalFunction("OnRemoteRCONFail", "sissi", ipaddr, port, password, command, 3);
-		return 0;
-	}
-	return 1;
-}
 
 stock ToggleRCONLogging(bool:toggle) {
 
@@ -189,17 +207,17 @@ stock RCON_IsLoggingEnabled()       return g_iRCONBools & e_BOOL_iLogging;
 stock GetFreeRCONSlot() {
 
 	for(new i = 0; i< MAX_RCONS; i++) {
-	
+
 	    if(g_iRCONData[i][e_iIP][0] == '\0')
 	        return i;
 	}
 	return INVALID_RCON_SLOT;
 }
-		
+
 static stock RCON_GetIPSlot(ip_address[]) {
 
 	for(new i = 0; i< MAX_RCONS; i++) {
-	
+
 	    if(!strcmp(ip_address, g_iRCONData[i][e_iIP], true))
 	        return i;
 	}
@@ -209,7 +227,7 @@ static stock RCON_GetIPSlot(ip_address[]) {
 stock IsIPWhitelisted(const ip_address[]) {
 
 	for(new i = 0; i< MAX_RCONS; i++) {
-	
+
 	    if(!strcmp(ip_address, g_iRCONData[i][e_iIP], true))
 	        return 1;
 	}
@@ -219,12 +237,12 @@ stock IsIPWhitelisted(const ip_address[]) {
 stock WhitelistIP(ip_address[]) {
 
 	if(IsIPWhitelisted(ip_address)) return 0;
-	
+
 	new
 	    temp_Slot = RCON_GetIPSlot(ip_address);
 
 	if(temp_Slot != INVALID_RCON_SLOT) {
-	
+
 	    strcpy(g_iRCONData[temp_Slot][e_iIP], ip_address, MAX_IP_LEN);
 		return 1;
 	}
@@ -237,7 +255,7 @@ stock UnwhitelistIPAddress(ip_address[]) {
 	    temp_Slot = RCON_GetIPSlot(ip_address);
 
 	if(temp_Slot != INVALID_RCON_SLOT) {
-	
+
 	    g_iRCONData[temp_Slot][e_iIP][0] = '\0';
 	    return 1;
 	}
